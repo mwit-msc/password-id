@@ -13,6 +13,9 @@ export const load: PageLoad = async () => {
 
 	return {
 		account,
-		passkeys
+		passkeys,
+		// The user DTO does not expose the TOTP status, so default to disabled.
+		// The two-factor card manages the state once the user enrolls or disables.
+		totpEnabled: account.totpEnabled ?? false
 	};
 };

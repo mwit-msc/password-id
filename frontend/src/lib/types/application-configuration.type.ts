@@ -13,6 +13,8 @@ export type AppConfig = {
 	uiConfigDisabled: boolean;
 	accentColor: string;
 	requireUserEmail: boolean;
+	passwordAuthEnabled: boolean;
+	totpEnabled: boolean;
 };
 
 export type AllAppConfig = AppConfig & {
@@ -21,6 +23,7 @@ export type AllAppConfig = AppConfig & {
 	emailsVerified: boolean;
 	signupDefaultUserGroupIDs: string[];
 	signupDefaultCustomClaims: CustomClaim[];
+	breachCheckEnabled: boolean;
 	// Email
 	smtpHost: string;
 	smtpPort: string;

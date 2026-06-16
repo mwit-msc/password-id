@@ -5,7 +5,12 @@
 	import * as Item from '$lib/components/ui/item/index.js';
 	import { m } from '$lib/paraglide/messages';
 	import appConfigStore from '$lib/stores/application-configuration-store';
-	import { LucideChevronRight, LucideMail, LucideRectangleEllipsis } from '@lucide/svelte';
+	import {
+		LucideChevronRight,
+		LucideKeyRound,
+		LucideMail,
+		LucideRectangleEllipsis
+	} from '@lucide/svelte';
 
 	const methods = [
 		{
@@ -22,6 +27,15 @@
 			title: m.email_login(),
 			description: m.request_a_login_code_via_email(),
 			href: '/login/alternative/email'
+		});
+	}
+
+	if ($appConfigStore.passwordAuthEnabled) {
+		methods.push({
+			icon: LucideKeyRound,
+			title: m.sign_in_with_password(),
+			description: m.sign_in_with_your_username_and_password(),
+			href: '/login/password'
 		});
 	}
 </script>

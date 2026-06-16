@@ -71,4 +71,12 @@
 			{error ? m.try_again() : m.authenticate()}
 		</Button>
 	</div>
+	{#if $appConfigStore.passwordAuthEnabled}
+		<a
+			href="/login/password"
+			class="text-muted-foreground mt-5 text-xs transition-colors hover:underline"
+		>
+			{m.sign_in_with_password()}
+		</a>
+	{/if}
 </SignInWrapper>

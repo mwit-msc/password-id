@@ -14,11 +14,13 @@
 	import type { Passkey } from '$lib/types/passkey.type';
 	import type { UserCreate } from '$lib/types/user.type';
 	import { axiosErrorToast } from '$lib/utils/error-util';
-	import { KeyRound, LucideChevronLeft } from '@lucide/svelte';
+	import { KeyRound, LucideChevronLeft, LucideLock } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { backNavigate } from '../navigate-back-util';
 	import UserForm from '../user-form.svelte';
 	import AdminPasskeyList from './admin-passkey-list.svelte';
+	import AdminSetPasswordModal from './admin-set-password-modal.svelte';
+	import PasswordService from '$lib/services/password-service';
 
 	let { data } = $props();
 	let user = $state({
@@ -29,7 +31,20 @@
 
 	const userService = new UserService();
 	const customClaimService = new CustomClaimService();
+	const passwordService = new PasswordService();
 	const backNavigation = backNavigate('/settings/admin/users');
+
+	let showSetPasswordModal = $state(false);
+	let inviteLoading = $state(false);
+
+	async function sendPasswordInvite() {
+		inviteLoading = true;
+		await passwordService
+			.adminInvite(user.id)
+			.then(() => toast.success(m.password_invite_sent_successfully()))
+			.catch(axiosErrorToast);
+		inviteLoading = false;
+	}
 
 	async function updateUserGroups(userIds: string[]) {
 		await userService
@@ -151,6 +166,28 @@
 	{/if}
 </Item.Group>
 
+{#if $appConfigStore.passwordAuthEnabled && !user.ldapId}
+	<Item.Root variant="card" class="border-border">
+		<Item.Media class="text-primary/80">
+			<LucideLock class="size-5" />
+		</Item.Media>
+		<Item.Content class="min-w-52">
+			<Item.Title>{m.password()}</Item.Title>
+			<Item.Description>
+				{m.set_a_password_for_this_user_or_send_them_an_invite_to_set_their_own()}
+			</Item.Description>
+		</Item.Content>
+		<Item.Actions class="flex-wrap gap-2">
+			<Button variant="outline" isLoading={inviteLoading} onclick={sendPasswordInvite}>
+				{m.send_password_invite()}
+			</Button>
+			<Button variant="outline" onclick={() => (showSetPasswordModal = true)}>
+				{m.set_password()}
+			</Button>
+		</Item.Actions>
+	</Item.Root>
+{/if}
+
 <CollapsibleCard
 	id="user-custom-claims"
 	title={m.custom_claims()}
@@ -161,3 +198,5 @@
 		<Button onclick={updateCustomClaims} type="submit">{m.save()}</Button>
 	</div>
 </CollapsibleCard>
+
+<AdminSetPasswordModal bind:show={showSetPasswordModal} userId={user.id} />

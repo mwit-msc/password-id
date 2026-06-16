@@ -25,13 +25,16 @@
 	import LocalePicker from './locale-picker.svelte';
 	import LoginCodeModal from './login-code-modal.svelte';
 	import PasskeyList from './passkey-list.svelte';
+	import PasswordCard from './password-card.svelte';
 	import RenamePasskeyModal from './rename-passkey-modal.svelte';
+	import TwoFactorCard from './two-factor-card.svelte';
 
 	let { data } = $props();
 	let account = $state(data.account);
 	let passkeys = $state(data.passkeys);
 	let passkeyToRename: Passkey | null = $state(null);
 	let showLoginCodeModal: boolean = $state(false);
+	let totpEnabled = $state(data.totpEnabled);
 
 	const userService = new UserService();
 	const webauthnService = new WebAuthnService();
@@ -162,6 +165,14 @@
 		<PasskeyList bind:passkeys />
 	{/if}
 </Item.Group>
+
+{#if $appConfigStore.passwordAuthEnabled}
+	<PasswordCard />
+{/if}
+
+{#if $appConfigStore.totpEnabled}
+	<TwoFactorCard bind:enabled={totpEnabled} />
+{/if}
 
 <div class="hidden sm:block">
 	<Item.Root variant="card" class="border-border">

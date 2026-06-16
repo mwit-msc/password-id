@@ -9,12 +9,14 @@
 	import {
 		LucideImage,
 		LucideInfo,
+		LucideShieldCheck,
 		Mail,
 		SlidersHorizontal,
 		UserSearch,
 		Users
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
+	import AppConfigAuthenticationForm from './forms/app-config-authentication-form.svelte';
 	import AppConfigEmailForm from './forms/app-config-email-form.svelte';
 	import AppConfigGeneralForm from './forms/app-config-general-form.svelte';
 	import AppConfigLdapForm from './forms/app-config-ldap-form.svelte';
@@ -120,6 +122,17 @@
 		description={m.configure_user_creation()}
 	>
 		<AppConfigSignupDefaultsForm {appConfig} callback={updateAppConfig} />
+	</CollapsibleCard>
+</div>
+
+<div>
+	<CollapsibleCard
+		id="application-configuration-authentication"
+		icon={LucideShieldCheck}
+		title={m.authentication()}
+		description={m.configure_password_and_two_factor_authentication()}
+	>
+		<AppConfigAuthenticationForm {appConfig} callback={updateAppConfig} />
 	</CollapsibleCard>
 </div>
 
