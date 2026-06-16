@@ -2,7 +2,10 @@ package common
 
 // pocket-id-password fork: error types for the password + TOTP credential layer.
 
-import "net/http"
+import (
+	"errors"
+	"net/http"
+)
 
 // PasswordAuthDisabledError is returned when password auth is attempted while disabled.
 type PasswordAuthDisabledError struct{}
@@ -37,6 +40,12 @@ func (e PasswordPolicyError) Error() string {
 	return "password does not meet the required policy"
 }
 func (e PasswordPolicyError) HttpStatusCode() int { return http.StatusBadRequest }
+
+func (e PasswordPolicyError) Is(target error) bool {
+	// Match by type, ignoring the Reason field.
+	x := &PasswordPolicyError{}
+	return errors.As(target, &x)
+}
 
 // MfaRequiredError signals the client that a second factor is needed to complete login.
 type MfaRequiredError struct{}

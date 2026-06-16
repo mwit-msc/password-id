@@ -74,6 +74,13 @@ func generateCode(secret string, counter uint64) (string, error) {
 	return fmt.Sprintf("%0*d", totpDigits, value%mod), nil
 }
 
+// GenerateCodeAt returns the TOTP code valid at the given time. Primarily useful for
+// tooling and tests; normal verification should use VerifyTotp (which tolerates skew).
+func GenerateCodeAt(secret string, at time.Time) (string, error) {
+	counter := uint64(at.Unix() / int64(totpPeriod.Seconds())) //nolint:gosec // unix time is positive
+	return generateCode(secret, counter)
+}
+
 // VerifyTotp checks a user-supplied code against the secret at the given time,
 // tolerating ±totpSkewSteps of clock drift. Comparison is constant-time.
 func VerifyTotp(secret, code string, at time.Time) bool {
