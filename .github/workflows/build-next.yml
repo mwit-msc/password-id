@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   build-next:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     env:
       CONTAINER_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/password-id

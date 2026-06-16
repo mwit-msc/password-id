@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     env:
       CONTAINER_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/password-id
@@ -150,7 +150,7 @@ jobs:
         run: gh release upload ${{ github.ref_name }} backend/.bin/*
 
   publish-release:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: [build]
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

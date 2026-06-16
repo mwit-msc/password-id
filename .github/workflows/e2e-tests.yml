@@ -21,7 +21,7 @@ permissions:
 jobs:
   test:
     if: github.event.pull_request.head.ref != 'i18n_crowdin'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
