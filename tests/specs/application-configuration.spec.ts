@@ -92,7 +92,7 @@ test.describe('Update user creation configuration', () => {
 });
 
 test('Update email configuration', async ({ page }) => {
-	await page.getByRole('button', { name: 'Expand card' }).nth(2).click();
+	await page.getByRole('button', { name: 'Expand card' }).nth(3).click();
 
 	await page.getByLabel('SMTP Host').fill('smtp.gmail.com');
 	await page.getByLabel('SMTP Port').fill('587');
@@ -125,7 +125,7 @@ test('Update email configuration', async ({ page }) => {
 
 test.describe('Update application images', () => {
 	test.beforeEach(async ({ page }) => {
-		await page.getByRole('button', { name: 'Expand card' }).nth(4).click();
+		await page.getByRole('button', { name: 'Expand card' }).nth(5).click();
 	});
 
 	test('should upload images', async ({ page }) => {

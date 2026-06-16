@@ -106,7 +106,7 @@ test('Sign in fails with wrong password', async ({ page }) => {
 	await page.getByRole('button', { name: /sign in|log in|continue/i }).click();
 
 	// Generic credentials error (no user enumeration); stays on the login page.
-	await expect(page.locator('[data-type="error"]')).toBeVisible();
+	await expect(page.getByTestId('login-error')).toBeVisible();
 	await expect(page).toHaveURL(/\/login\/password/);
 });
 

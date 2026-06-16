@@ -58,7 +58,7 @@
 	{m.sign_in_to_appname({ appName: $appConfigStore.appName })}
 </h1>
 {#if error}
-	<p class="text-muted-foreground mt-2" in:fade>
+	<p class="text-muted-foreground mt-2" in:fade data-testid="login-error">
 		{error}. {m.please_try_again()}
 	</p>
 {:else}
