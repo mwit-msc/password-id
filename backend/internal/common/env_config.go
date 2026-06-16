@@ -82,6 +82,14 @@ type EnvConfigSchema struct {
 	MetricsEnabled bool   `env:"METRICS_ENABLED"`
 	TracingEnabled bool   `env:"TRACING_ENABLED"`
 	LogJSON        bool   `env:"LOG_JSON"`
+
+	// pocket-id-password fork: password + TOTP policy
+	PasswordMinLength              int `env:"PASSWORD_MIN_LENGTH"`
+	PasswordArgon2Memory           int `env:"PASSWORD_ARGON2_MEMORY"`     // KiB
+	PasswordArgon2Iterations       int `env:"PASSWORD_ARGON2_ITERATIONS"` //nolint:tagliatelle
+	PasswordArgon2Parallelism      int `env:"PASSWORD_ARGON2_PARALLELISM"`
+	PasswordLockoutMaxAttempts     int `env:"PASSWORD_LOCKOUT_MAX_ATTEMPTS"`
+	PasswordLockoutDurationMinutes int `env:"PASSWORD_LOCKOUT_DURATION_MINUTES"`
 }
 
 var EnvConfig = defaultConfig()
@@ -106,6 +114,13 @@ func defaultConfig() EnvConfigSchema {
 		Host:                  "0.0.0.0",
 		GeoLiteDBPath:         "data/GeoLite2-City.mmdb",
 		GeoLiteDBUrl:          MaxMindGeoLiteCityUrl,
+		// pocket-id-password fork: password + TOTP policy defaults (OWASP baseline)
+		PasswordMinLength:              10,
+		PasswordArgon2Memory:           64 * 1024,
+		PasswordArgon2Iterations:       3,
+		PasswordArgon2Parallelism:      2,
+		PasswordLockoutMaxAttempts:     5,
+		PasswordLockoutDurationMinutes: 15,
 	}
 }
 

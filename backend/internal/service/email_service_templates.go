@@ -82,5 +82,31 @@ type EmailVerificationTemplateData struct {
 	VerificationLink string
 }
 
+// pocket-id-password fork: password reset + invite templates
+var PasswordResetTemplate = email.Template[PasswordResetTemplateData]{
+	Path: "password-reset",
+	Title: func(data *email.TemplateData[PasswordResetTemplateData]) string {
+		return "Reset your " + data.AppName + " password"
+	},
+}
+
+var PasswordInviteTemplate = email.Template[PasswordInviteTemplateData]{
+	Path: "password-invite",
+	Title: func(data *email.TemplateData[PasswordInviteTemplateData]) string {
+		return "You've been invited to " + data.AppName
+	},
+}
+
+type PasswordResetTemplateData struct {
+	UserFullName     string
+	ResetLink        string
+	ExpirationString string
+}
+
+type PasswordInviteTemplateData struct {
+	UserFullName string
+	InviteLink   string
+}
+
 // this is list of all template paths used for preloading templates
-var emailTemplatesPaths = []string{NewLoginTemplate.Path, OneTimeAccessTemplate.Path, TestTemplate.Path, ApiKeyExpiringSoonTemplate.Path, EmailVerificationTemplate.Path}
+var emailTemplatesPaths = []string{NewLoginTemplate.Path, OneTimeAccessTemplate.Path, TestTemplate.Path, ApiKeyExpiringSoonTemplate.Path, EmailVerificationTemplate.Path, PasswordResetTemplate.Path, PasswordInviteTemplate.Path}

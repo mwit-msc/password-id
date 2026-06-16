@@ -17,3 +17,9 @@ func AddSessionIdCookie(c *gin.Context, maxAgeInSeconds int, sessionID string) {
 func AddDeviceTokenCookie(c *gin.Context, deviceToken string) {
 	c.SetCookie(DeviceTokenCookieName, deviceToken, int(15*time.Minute.Seconds()), "/api/one-time-access-token", "", true, true)
 }
+
+// AddMfaChallengeCookie sets the short-lived "password verified, second factor pending" cookie.
+// pocket-id-password fork.
+func AddMfaChallengeCookie(c *gin.Context, maxAgeInSeconds int, challengeID string) {
+	c.SetCookie(MfaChallengeCookieName, challengeID, maxAgeInSeconds, "/api/password", "", true, true)
+}

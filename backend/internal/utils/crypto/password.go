@@ -72,7 +72,7 @@ func VerifyPassword(password, encodedHash string) (bool, error) {
 
 	otherHash := argon2.IDKey([]byte(password), salt, params.Iterations, params.Memory, params.Parallelism, params.KeyLength)
 
-	if subtle.ConstantTimeEq(int32(len(hash)), int32(len(otherHash))) == 0 {
+	if len(hash) != len(otherHash) {
 		return false, nil
 	}
 	return subtle.ConstantTimeCompare(hash, otherHash) == 1, nil
@@ -112,13 +112,13 @@ func decodeArgon2idHash(encodedHash string) (params Argon2idParams, salt, hash [
 	if err != nil {
 		return params, nil, nil, ErrInvalidPasswordHash
 	}
-	params.SaltLength = uint32(len(salt))
+	params.SaltLength = uint32(len(salt)) //nolint:gosec // salt length is small and bounded
 
 	hash, err = base64.RawStdEncoding.DecodeString(parts[5])
 	if err != nil {
 		return params, nil, nil, ErrInvalidPasswordHash
 	}
-	params.KeyLength = uint32(len(hash))
+	params.KeyLength = uint32(len(hash)) //nolint:gosec // key length is small and bounded
 
 	return params, salt, hash, nil
 }

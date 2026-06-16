@@ -134,6 +134,9 @@ func registerRoutes(r *gin.Engine, db *gorm.DB, svc *services) error {
 	controller.NewVersionController(apiGroup, authMiddleware, svc.versionService)
 	controller.NewScimController(apiGroup, authMiddleware, svc.scimService)
 	controller.NewUserSignupController(apiGroup, authMiddleware, middleware.NewRateLimitMiddleware(), svc.userSignUpService, svc.appConfigService)
+	// pocket-id-password fork: password + TOTP controllers
+	controller.NewPasswordController(apiGroup, authMiddleware, middleware.NewRateLimitMiddleware(), svc.passwordService, svc.appConfigService)
+	controller.NewTotpController(apiGroup, authMiddleware, middleware.NewRateLimitMiddleware(), svc.totpService)
 
 	registerTestRoutes(apiGroup, db, svc)
 

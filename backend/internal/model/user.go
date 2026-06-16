@@ -27,11 +27,11 @@ type User struct {
 	UpdatedAt     *datatype.DateTime
 
 	// pocket-id-password fork: password + TOTP credential fields
-	PasswordHash     *string                  `json:"-"`
-	FailedLoginCount int                      `json:"-"`
-	LockedUntil      *datatype.DateTime       `json:"-"`
+	PasswordHash     *string                   `json:"-"`
+	FailedLoginCount int                       `json:"-"`
+	LockedUntil      *datatype.DateTime        `json:"-"`
 	TotpSecret       *datatype.EncryptedString `json:"-"`
-	TotpEnabled      bool                     `sortable:"true" filterable:"true"`
+	TotpEnabled      bool                      `sortable:"true" filterable:"true"`
 
 	CustomClaims []CustomClaim
 	UserGroups   []UserGroup `gorm:"many2many:user_groups_users;"`

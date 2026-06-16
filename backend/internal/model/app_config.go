@@ -44,6 +44,10 @@ type AppConfig struct {
 	AllowUserSignups          AppConfigVariable `key:"allowUserSignups,public"`    // Public
 	SignupDefaultUserGroupIDs AppConfigVariable `key:"signupDefaultUserGroupIDs"`
 	SignupDefaultCustomClaims AppConfigVariable `key:"signupDefaultCustomClaims"`
+	// pocket-id-password fork: password + TOTP toggles (public so the login UI can branch)
+	PasswordAuthEnabled AppConfigVariable `key:"passwordAuthEnabled,public"` // Public
+	TotpEnabled         AppConfigVariable `key:"totpEnabled,public"`         // Public
+	BreachCheckEnabled  AppConfigVariable `key:"breachCheckEnabled"`
 	// Internal
 	InstanceID AppConfigVariable `key:"instanceId,internal"` // Internal
 	// Email

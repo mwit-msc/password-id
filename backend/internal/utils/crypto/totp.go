@@ -81,7 +81,7 @@ func VerifyTotp(secret, code string, at time.Time) bool {
 	if len(code) != totpDigits {
 		return false
 	}
-	counter := uint64(at.Unix() / int64(totpPeriod.Seconds()))
+	counter := uint64(at.Unix() / int64(totpPeriod.Seconds())) //nolint:gosec // unix time is positive
 	for i := -totpSkewSteps; i <= totpSkewSteps; i++ {
 		expected, err := generateCode(secret, counter+uint64(int64(i)))
 		if err != nil {

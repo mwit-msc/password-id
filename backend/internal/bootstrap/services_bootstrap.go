@@ -32,6 +32,10 @@ type services struct {
 	appLockService       *service.AppLockService
 	userSignUpService    *service.UserSignUpService
 	oneTimeAccessService *service.OneTimeAccessService
+	// pocket-id-password fork
+	totpService     *service.TotpService
+	breachService   *service.BreachService
+	passwordService *service.PasswordService
 }
 
 // Initializes all services
@@ -85,6 +89,11 @@ func initServices(ctx context.Context, db *gorm.DB, httpClient *http.Client, ima
 	svc.oneTimeAccessService = service.NewOneTimeAccessService(db, svc.userService, svc.jwtService, svc.auditLogService, svc.emailService, svc.appConfigService)
 
 	svc.versionService = service.NewVersionService(httpClient)
+
+	// pocket-id-password fork: password + TOTP services
+	svc.totpService = service.NewTotpService(db, svc.appConfigService, svc.auditLogService)
+	svc.breachService = service.NewBreachService()
+	svc.passwordService = service.NewPasswordService(db, svc.jwtService, svc.auditLogService, svc.emailService, svc.appConfigService, svc.totpService, svc.breachService)
 
 	return svc, nil
 }

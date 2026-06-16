@@ -12,16 +12,20 @@ type AppConfigVariableDto struct {
 }
 
 type AppConfigUpdateDto struct {
-	AppName                                    string `json:"appName" binding:"required,min=1,max=30" unorm:"nfc"`
-	SessionDuration                            string `json:"sessionDuration" binding:"required"`
-	HomePageURL                                string `json:"homePageUrl" binding:"required"`
-	EmailsVerified                             string `json:"emailsVerified" binding:"required"`
-	DisableAnimations                          string `json:"disableAnimations" binding:"required"`
-	AllowOwnAccountEdit                        string `json:"allowOwnAccountEdit" binding:"required"`
-	AllowUserSignups                           string `json:"allowUserSignups" binding:"required,oneof=disabled withToken open"`
-	SignupDefaultUserGroupIDs                  string `json:"signupDefaultUserGroupIDs" binding:"omitempty,json"`
-	SignupDefaultCustomClaims                  string `json:"signupDefaultCustomClaims" binding:"omitempty,json"`
-	AccentColor                                string `json:"accentColor"`
+	AppName                   string `json:"appName" binding:"required,min=1,max=30" unorm:"nfc"`
+	SessionDuration           string `json:"sessionDuration" binding:"required"`
+	HomePageURL               string `json:"homePageUrl" binding:"required"`
+	EmailsVerified            string `json:"emailsVerified" binding:"required"`
+	DisableAnimations         string `json:"disableAnimations" binding:"required"`
+	AllowOwnAccountEdit       string `json:"allowOwnAccountEdit" binding:"required"`
+	AllowUserSignups          string `json:"allowUserSignups" binding:"required,oneof=disabled withToken open"`
+	SignupDefaultUserGroupIDs string `json:"signupDefaultUserGroupIDs" binding:"omitempty,json"`
+	SignupDefaultCustomClaims string `json:"signupDefaultCustomClaims" binding:"omitempty,json"`
+	AccentColor               string `json:"accentColor"`
+	// pocket-id-password fork
+	PasswordAuthEnabled                        string `json:"passwordAuthEnabled" binding:"required"`
+	TotpEnabled                                string `json:"totpEnabled" binding:"required"`
+	BreachCheckEnabled                         string `json:"breachCheckEnabled" binding:"required"`
 	RequireUserEmail                           string `json:"requireUserEmail" binding:"required"`
 	SmtpHost                                   string `json:"smtpHost"`
 	SmtpPort                                   string `json:"smtpPort"`

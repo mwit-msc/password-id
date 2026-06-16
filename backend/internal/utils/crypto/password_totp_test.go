@@ -52,7 +52,7 @@ func TestDummyVerifyDoesNotPanic(t *testing.T) {
 // truncated to our 6-digit configuration.
 func TestTotpRFC6238(t *testing.T) {
 	// RFC 6238 SHA-1 seed "12345678901234567890" base32-encoded (no padding).
-	const secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"
+	const secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ" //nolint:gosec // RFC 6238 test vector, not a credential
 
 	cases := []struct {
 		unix int64
@@ -82,7 +82,7 @@ func TestTotpSkewWindow(t *testing.T) {
 		t.Fatalf("GenerateTotpSecret: %v", err)
 	}
 	now := time.Unix(1700000000, 0)
-	code, err := generateCode(secret, uint64(now.Unix()/30))
+	code, err := generateCode(secret, uint64(now.Unix()/30)) //nolint:gosec // unix time is positive
 	if err != nil {
 		t.Fatalf("generateCode: %v", err)
 	}

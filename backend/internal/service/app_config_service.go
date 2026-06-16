@@ -69,6 +69,10 @@ func (s *AppConfigService) getDefaultDbConfig() *model.AppConfig {
 		SignupDefaultUserGroupIDs: model.AppConfigVariable{Value: "[]"},
 		SignupDefaultCustomClaims: model.AppConfigVariable{Value: "[]"},
 		AccentColor:               model.AppConfigVariable{Value: "default"},
+		// pocket-id-password fork: disabled by default => fresh install behaves like upstream
+		PasswordAuthEnabled: model.AppConfigVariable{Value: "false"},
+		TotpEnabled:         model.AppConfigVariable{Value: "false"},
+		BreachCheckEnabled:  model.AppConfigVariable{Value: "false"},
 		// Internal
 		InstanceID: model.AppConfigVariable{Value: ""},
 		// Email
