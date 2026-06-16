@@ -22,7 +22,7 @@ permissions:
 jobs:
   golangci-lint:
     name: Run Golangci-lint
-    runs-on: depot-ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
