@@ -31,6 +31,12 @@ func NewAuditLogService(db *gorm.DB, appConfigService *AppConfigService, emailSe
 
 // Create creates a new audit log entry in the database
 func (s *AuditLogService) Create(ctx context.Context, event model.AuditLogEvent, ipAddress, userAgent, userID string, data model.AuditLogData, tx *gorm.DB) (model.AuditLog, bool) {
+	// pocket-id-password fork: external-IdP / password callers pass nil (no surrounding
+	// transaction). Without this guard tx.WithContext would nil-panic. Fall back to the base handle.
+	if tx == nil {
+		tx = s.db
+	}
+
 	country, city, err := s.geoliteService.GetLocationByIP(ipAddress)
 	if err != nil {
 		// Log the error but don't interrupt the operation
