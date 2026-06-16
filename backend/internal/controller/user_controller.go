@@ -195,6 +195,8 @@ func (uc *UserController) getCurrentUserHandler(c *gin.Context) {
 		_ = c.Error(err)
 		return
 	}
+	// pocket-id-password fork: expose whether a recovery password is set (never the hash)
+	userDto.PasswordSet = user.PasswordHash != nil && *user.PasswordHash != ""
 
 	c.JSON(http.StatusOK, userDto)
 }

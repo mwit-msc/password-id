@@ -48,6 +48,8 @@ type AppConfig struct {
 	PasswordAuthEnabled AppConfigVariable `key:"passwordAuthEnabled,public"` // Public
 	TotpEnabled         AppConfigVariable `key:"totpEnabled,public"`         // Public
 	BreachCheckEnabled  AppConfigVariable `key:"breachCheckEnabled"`
+	// pocket-id-password fork: which auth method is shown first on the login page ("passkey" | "password")
+	LoginPrimaryMethod AppConfigVariable `key:"loginPrimaryMethod,public"` // Public
 	// Internal
 	InstanceID AppConfigVariable `key:"instanceId,internal"` // Internal
 	// Email

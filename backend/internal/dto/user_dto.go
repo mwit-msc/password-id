@@ -20,6 +20,8 @@ type UserDto struct {
 	UserGroups    []UserGroupMinimalDto `json:"userGroups"`
 	LdapID        *string               `json:"ldapId"`
 	Disabled      bool                  `json:"disabled"`
+	// pocket-id-password fork: lets the UI nudge OAuth/passkey-only users to set a recovery password
+	PasswordSet bool `json:"passwordSet"`
 }
 
 type UserCreateDto struct {

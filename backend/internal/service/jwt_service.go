@@ -44,6 +44,9 @@ const (
 	// pocket-id-password fork: AuthenticationMethodPassword identifies username/password authentication
 	AuthenticationMethodPassword = "pwd"
 
+	// pocket-id-password fork: AuthenticationMethodExternal identifies federated (external OIDC) login
+	AuthenticationMethodExternal = "ext"
+
 	// OAuthAccessTokenJWTType identifies a JWT as an OAuth access token
 	OAuthAccessTokenJWTType = "oauth-access-token" //nolint:gosec
 

@@ -17,6 +17,7 @@ export type User = {
 	ldapId?: string;
 	disabled?: boolean;
 	totpEnabled?: boolean;
+	passwordSet?: boolean;
 };
 
 export type UserCreate = Omit<User, 'id' | 'customClaims' | 'ldapId' | 'userGroups'>;

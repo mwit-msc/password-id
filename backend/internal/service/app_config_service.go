@@ -73,6 +73,7 @@ func (s *AppConfigService) getDefaultDbConfig() *model.AppConfig {
 		PasswordAuthEnabled: model.AppConfigVariable{Value: "false"},
 		TotpEnabled:         model.AppConfigVariable{Value: "false"},
 		BreachCheckEnabled:  model.AppConfigVariable{Value: "false"},
+		LoginPrimaryMethod:  model.AppConfigVariable{Value: "passkey"},
 		// Internal
 		InstanceID: model.AppConfigVariable{Value: ""},
 		// Email

@@ -45,6 +45,10 @@ const (
 	AuditLogEventAccountLocked   AuditLogEvent = "ACCOUNT_LOCKED"
 	AuditLogEventTotpEnabled     AuditLogEvent = "TOTP_ENABLED"
 	AuditLogEventTotpDisabled    AuditLogEvent = "TOTP_DISABLED"
+	// pocket-id-password fork: external OIDC (social) login events
+	AuditLogEventExternalSignIn          AuditLogEvent = "EXTERNAL_SIGN_IN"
+	AuditLogEventExternalAccountLinked   AuditLogEvent = "EXTERNAL_ACCOUNT_LINKED"
+	AuditLogEventExternalAccountUnlinked AuditLogEvent = "EXTERNAL_ACCOUNT_UNLINKED"
 )
 
 // Scan and Value methods for GORM to handle the custom type

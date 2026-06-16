@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import { onMount } from 'svelte';
 	import FormattedMessage from '$lib/components/formatted-message.svelte';
 	import * as Alert from '$lib/components/ui/alert';
 	import { Button } from '$lib/components/ui/button';
@@ -22,6 +24,7 @@
 	import { startRegistration } from '@simplewebauthn/browser';
 	import { toast } from 'svelte-sonner';
 	import AccountForm from './account-form.svelte';
+	import LinkedAccountsCard from './linked-accounts-card.svelte';
 	import LocalePicker from './locale-picker.svelte';
 	import LoginCodeModal from './login-code-modal.svelte';
 	import PasskeyList from './passkey-list.svelte';
@@ -59,6 +62,13 @@
 		return success;
 	}
 
+	onMount(() => {
+		// Surface the result of an external-account link round-trip (?linked=<slug>).
+		if (page.url.searchParams.get('linked')) {
+			toast.success(m.account_linked_successfully());
+		}
+	});
+
 	async function createPasskey() {
 		try {
 			const opts = await webauthnService.getRegistrationOptions();
@@ -77,7 +87,21 @@
 	<title>{m.account_settings()}</title>
 </svelte:head>
 
-{#if passkeys.length == 0}
+{#if $appConfigStore.passwordAuthEnabled}
+	<!-- pocket-id-password fork: with password auth on, a passkey is optional. Instead nudge
+	     users (e.g. those who signed up via an external provider) to set a recovery password. -->
+	{#if !account.passwordSet}
+		<Alert.Root variant="warning" class="flex gap-3">
+			<LucideAlertTriangle class="size-4" />
+			<div>
+				<Alert.Title class="font-semibold">{m.password_not_set()}</Alert.Title>
+				<Alert.Description class="text-sm">
+					{m.set_a_password_so_you_can_sign_in_without_an_external_provider()}
+				</Alert.Description>
+			</div>
+		</Alert.Root>
+	{/if}
+{:else if passkeys.length == 0}
 	<Alert.Root variant="warning" class="flex gap-3">
 		<LucideAlertTriangle class="size-4" />
 		<div class="md:flex md:w-full md:place-content-between">
@@ -173,6 +197,8 @@
 {#if $appConfigStore.totpEnabled}
 	<TwoFactorCard bind:enabled={totpEnabled} />
 {/if}
+
+<LinkedAccountsCard />
 
 <div class="hidden sm:block">
 	<Item.Root variant="card" class="border-border">

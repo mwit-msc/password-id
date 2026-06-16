@@ -1,6 +1,8 @@
 <script lang="ts">
 	import SwitchWithLabel from '$lib/components/form/switch-with-label.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import * as Field from '$lib/components/ui/field';
+	import * as Select from '$lib/components/ui/select';
 	import { m } from '$lib/paraglide/messages';
 	import appConfigStore from '$lib/stores/application-configuration-store';
 	import type { AllAppConfig } from '$lib/types/application-configuration.type';
@@ -22,14 +24,21 @@
 	const updatedAppConfig = {
 		passwordAuthEnabled: appConfig.passwordAuthEnabled,
 		totpEnabled: appConfig.totpEnabled,
-		breachCheckEnabled: appConfig.breachCheckEnabled
+		breachCheckEnabled: appConfig.breachCheckEnabled,
+		loginPrimaryMethod: appConfig.loginPrimaryMethod ?? 'passkey'
 	};
 
 	const formSchema = z.object({
 		passwordAuthEnabled: z.boolean(),
 		totpEnabled: z.boolean(),
-		breachCheckEnabled: z.boolean()
+		breachCheckEnabled: z.boolean(),
+		loginPrimaryMethod: z.enum(['passkey', 'password'])
 	});
+
+	const primaryMethodOptions = [
+		{ value: 'passkey', label: m.passkey() },
+		{ value: 'password', label: m.password() }
+	];
 
 	let { inputs, ...form } = $derived(createForm(formSchema, updatedAppConfig));
 
@@ -63,6 +72,26 @@
 			description={m.reject_passwords_that_have_been_found_in_known_data_breaches()}
 			bind:checked={$inputs.breachCheckEnabled.value}
 		/>
+
+		<Field.Field>
+			<Field.Label>{m.login_primary_method()}</Field.Label>
+			<Field.Description>{m.login_primary_method_description()}</Field.Description>
+			<Select.Root
+				type="single"
+				value={$inputs.loginPrimaryMethod.value}
+				onValueChange={(v) => ($inputs.loginPrimaryMethod.value = v as 'passkey' | 'password')}
+			>
+				<Select.Trigger class="w-full" aria-label={m.login_primary_method()}>
+					{primaryMethodOptions.find((o) => o.value === $inputs.loginPrimaryMethod.value)?.label ??
+						$inputs.loginPrimaryMethod.value}
+				</Select.Trigger>
+				<Select.Content>
+					{#each primaryMethodOptions as option}
+						<Select.Item value={option.value}>{option.label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+		</Field.Field>
 
 		<div class="mt-2 flex justify-end">
 			<Button {isLoading} type="submit">{m.save()}</Button>

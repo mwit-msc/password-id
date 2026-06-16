@@ -33,9 +33,10 @@ type services struct {
 	userSignUpService    *service.UserSignUpService
 	oneTimeAccessService *service.OneTimeAccessService
 	// pocket-id-password fork
-	totpService     *service.TotpService
-	breachService   *service.BreachService
-	passwordService *service.PasswordService
+	totpService        *service.TotpService
+	breachService      *service.BreachService
+	passwordService    *service.PasswordService
+	externalIdpService *service.ExternalIdpService
 }
 
 // Initializes all services
@@ -94,6 +95,12 @@ func initServices(ctx context.Context, db *gorm.DB, httpClient *http.Client, ima
 	svc.totpService = service.NewTotpService(db, svc.appConfigService, svc.auditLogService)
 	svc.breachService = service.NewBreachService()
 	svc.passwordService = service.NewPasswordService(db, svc.jwtService, svc.auditLogService, svc.emailService, svc.appConfigService, svc.totpService, svc.breachService)
+
+	// pocket-id-password fork: external OIDC (social login / account linking)
+	svc.externalIdpService = service.NewExternalIdpService(db, svc.jwtService, svc.auditLogService, svc.appConfigService, svc.userService, httpClient)
+	if err = svc.externalIdpService.SeedFromEnv(ctx); err != nil {
+		return nil, fmt.Errorf("failed to seed external OIDC providers from env: %w", err)
+	}
 
 	return svc, nil
 }

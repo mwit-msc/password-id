@@ -1,38 +1,47 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import SignInWrapper from '$lib/components/login-wrapper.svelte';
-	import { Button } from '$lib/components/ui/button';
 	import { m } from '$lib/paraglide/messages';
-	import WebAuthnService from '$lib/services/webauthn-service';
 	import appConfigStore from '$lib/stores/application-configuration-store';
-	import userStore from '$lib/stores/user-store';
-	import { getWebauthnErrorMessage } from '$lib/utils/error-util';
-	import { startAuthentication } from '@simplewebauthn/browser';
-	import { fade } from 'svelte/transition';
-	import { cn } from 'tailwind-variants';
-	import LoginLogoErrorSuccessIndicator from './components/login-logo-error-success-indicator.svelte';
+	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
+	import ExternalProviders from './components/external-providers.svelte';
+	import PasskeyLogin from './components/passkey-login.svelte';
+	import PasswordLogin from './components/password-login.svelte';
 
 	let { data } = $props();
 
-	const webauthnService = new WebAuthnService();
+	const passwordAvailable = $derived($appConfigStore.passwordAuthEnabled);
+	// Primary method comes from config, but only matters when password auth is enabled.
+	const primaryIsPassword = $derived(
+		passwordAvailable && $appConfigStore.loginPrimaryMethod === 'password'
+	);
 
-	let isLoading = $state(false);
-	let error: string | undefined = $state(undefined);
+	let showPassword = $state(false);
+	$effect(() => {
+		showPassword = primaryIsPassword;
+	});
 
-	async function authenticate() {
-		error = undefined;
-		isLoading = true;
-		try {
-			const loginOptions = await webauthnService.getLoginOptions();
-			const authResponse = await startAuthentication({ optionsJSON: loginOptions });
-			const user = await webauthnService.finishLogin(authResponse);
-
-			await userStore.setUser(user);
-			goto(data.redirect || '/settings');
-		} catch (e) {
-			error = getWebauthnErrorMessage(e);
+	onMount(() => {
+		const err = page.url.searchParams.get('externalError');
+		if (err) {
+			toast.error(externalErrorMessage(err));
 		}
-		isLoading = false;
+	});
+
+	function externalErrorMessage(code: string): string {
+		switch (code) {
+			case 'no_account':
+				return m.external_no_account();
+			case 'email_not_allowed':
+				return m.external_email_not_allowed();
+			case 'provider_disabled':
+				return m.external_provider_disabled();
+			case 'expired':
+				return m.external_sign_in_expired();
+			default:
+				return m.external_sign_in_failed();
+		}
 	}
 </script>
 
@@ -41,42 +50,21 @@
 </svelte:head>
 
 <SignInWrapper showAlternativeSignInMethodButton>
-	<div class="flex justify-center">
-		<LoginLogoErrorSuccessIndicator error={!!error} />
-	</div>
-	<h1 class="font-gloock mt-5 text-3xl font-bold sm:text-4xl">
-		{m.sign_in_to_appname({ appName: $appConfigStore.appName })}
-	</h1>
-	{#if error}
-		<p class="text-muted-foreground mt-2" in:fade>
-			{error}. {m.please_try_to_sign_in_again()}
-		</p>
+	{#if showPassword}
+		<PasswordLogin redirect={data.redirect} />
 	{:else}
-		<p class="text-muted-foreground mt-2" in:fade>
-			{m.authenticate_with_passkey_to_access_account()}
-		</p>
+		<PasskeyLogin redirect={data.redirect} />
 	{/if}
-	<div class="mt-10 flex justify-center gap-3 w-full max-w-[450px]">
-		{#if $appConfigStore.allowUserSignups === 'open'}
-			<Button class="w-[50%]" variant="secondary" href="/signup">
-				{m.signup()}
-			</Button>
-		{/if}
-		<Button
-			class={cn($appConfigStore.allowUserSignups === 'open' && 'w-[50%]')}
-			{isLoading}
-			onclick={authenticate}
-			autofocus={true}
-		>
-			{error ? m.try_again() : m.authenticate()}
-		</Button>
-	</div>
-	{#if $appConfigStore.passwordAuthEnabled}
-		<a
-			href="/login/password"
+
+	<ExternalProviders redirect={data.redirect} />
+
+	{#if passwordAvailable}
+		<button
+			type="button"
 			class="text-muted-foreground mt-5 text-xs transition-colors hover:underline"
+			onclick={() => (showPassword = !showPassword)}
 		>
-			{m.sign_in_with_password()}
-		</a>
+			{showPassword ? m.sign_in_with_a_passkey() : m.sign_in_with_password()}
+		</button>
 	{/if}
 </SignInWrapper>

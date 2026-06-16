@@ -26,6 +26,7 @@ type AppConfigUpdateDto struct {
 	PasswordAuthEnabled                        string `json:"passwordAuthEnabled" binding:"required"`
 	TotpEnabled                                string `json:"totpEnabled" binding:"required"`
 	BreachCheckEnabled                         string `json:"breachCheckEnabled" binding:"required"`
+	LoginPrimaryMethod                         string `json:"loginPrimaryMethod" binding:"omitempty,oneof=passkey password"`
 	RequireUserEmail                           string `json:"requireUserEmail" binding:"required"`
 	SmtpHost                                   string `json:"smtpHost"`
 	SmtpPort                                   string `json:"smtpPort"`

@@ -15,6 +15,7 @@ export type AppConfig = {
 	requireUserEmail: boolean;
 	passwordAuthEnabled: boolean;
 	totpEnabled: boolean;
+	loginPrimaryMethod: 'passkey' | 'password';
 };
 
 export type AllAppConfig = AppConfig & {

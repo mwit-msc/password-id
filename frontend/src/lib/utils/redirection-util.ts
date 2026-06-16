@@ -18,6 +18,9 @@ export function getAuthRedirectPath(url: URL, user: User | null) {
 
 	const isPublicPath =
 		path.startsWith('/lc/') ||
+		// pocket-id-password fork: password reset/set links arrive from email while signed out
+		path == '/set-password' ||
+		path == '/reset-password' ||
 		['/authorize', '/login/alternative/code', '/device', '/health', '/healthz'].includes(path);
 
 	const isAdminPath = path == '/settings/admin' || path.startsWith('/settings/admin/');
