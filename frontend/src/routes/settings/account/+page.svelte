@@ -21,6 +21,7 @@
 		RectangleEllipsis,
 		UserCog
 	} from '@lucide/svelte';
+	import { deferToast } from '$lib/utils/toast.util';
 	import { startRegistration } from '@simplewebauthn/browser';
 	import { toast } from 'svelte-sonner';
 	import AccountForm from './account-form.svelte';
@@ -65,7 +66,7 @@
 	onMount(() => {
 		// Surface the result of an external-account link round-trip (?linked=<slug>).
 		if (page.url.searchParams.get('linked')) {
-			toast.success(m.account_linked_successfully());
+			deferToast((t) => t.success(m.account_linked_successfully()));
 		}
 	});
 

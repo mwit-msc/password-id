@@ -3,8 +3,8 @@
 	import SignInWrapper from '$lib/components/login-wrapper.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import appConfigStore from '$lib/stores/application-configuration-store';
+	import { deferToast } from '$lib/utils/toast.util';
 	import { onMount } from 'svelte';
-	import { toast } from 'svelte-sonner';
 	import ExternalProviders from './components/external-providers.svelte';
 	import PasskeyLogin from './components/passkey-login.svelte';
 	import PasswordLogin from './components/password-login.svelte';
@@ -25,7 +25,7 @@
 	onMount(() => {
 		const err = page.url.searchParams.get('externalError');
 		if (err) {
-			toast.error(externalErrorMessage(err));
+			deferToast((t) => t.error(externalErrorMessage(err)));
 		}
 	});
 
