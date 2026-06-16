@@ -88,9 +88,10 @@ func TestPasswordLoginFailuresAndLockout(t *testing.T) {
 		require.ErrorIs(t, err, &common.InvalidCredentialsError{})
 	}
 
-	// Now even the correct password is rejected with a lockout error.
+	// Now even the correct password is rejected — with the SAME generic error (lockout is
+	// enforced but not advertised, to avoid an enumeration oracle).
 	_, err = pw.Login(ctx, "alice", "correct horse battery", "", "")
-	require.ErrorIs(t, err, &common.AccountLockedError{})
+	require.ErrorIs(t, err, &common.InvalidCredentialsError{})
 
 	// Sanity: lockout was persisted.
 	var u model.User
@@ -211,6 +212,52 @@ func TestTotpRecoveryCodeSingleUse(t *testing.T) {
 	res, err = pw.Login(ctx, "alice", "correct horse battery", "", "")
 	require.NoError(t, err)
 	_, _, err = pw.VerifyMfa(ctx, res.MfaChallenge, recovery, "", "")
+	require.ErrorIs(t, err, &common.MfaInvalidError{})
+}
+
+func TestTotpCodeReplayRejected(t *testing.T) {
+	ctx := t.Context()
+	pw, totp, _, _ := setupPasswordTest(t, true)
+	require.NoError(t, pw.AdminSetPassword(ctx, "u1", "correct horse battery", "", ""))
+
+	secret, _, err := totp.Enroll(ctx, "u1")
+	require.NoError(t, err)
+	code, err := crypto.GenerateCodeAt(secret, time.Now())
+	require.NoError(t, err)
+	_, err = totp.Confirm(ctx, "u1", code, "", "")
+	require.NoError(t, err)
+
+	// First login with a fresh code succeeds.
+	loginCode, err := crypto.GenerateCodeAt(secret, time.Now())
+	require.NoError(t, err)
+	res, err := pw.Login(ctx, "alice", "correct horse battery", "", "")
+	require.NoError(t, err)
+	_, token, err := pw.VerifyMfa(ctx, res.MfaChallenge, loginCode, "", "")
+	require.NoError(t, err)
+	require.NotEmpty(t, token)
+
+	// Replaying the SAME code in a new challenge within the window must be rejected.
+	res2, err := pw.Login(ctx, "alice", "correct horse battery", "", "")
+	require.NoError(t, err)
+	_, _, err = pw.VerifyMfa(ctx, res2.MfaChallenge, loginCode, "", "")
+	require.ErrorIs(t, err, &common.MfaInvalidError{})
+}
+
+func TestMfaRejectsForgedChallengeToken(t *testing.T) {
+	ctx := t.Context()
+	pw, totp, _, _ := setupPasswordTest(t, true)
+	require.NoError(t, pw.AdminSetPassword(ctx, "u1", "correct horse battery", "", ""))
+	secret, _, err := totp.Enroll(ctx, "u1")
+	require.NoError(t, err)
+	code, err := crypto.GenerateCodeAt(secret, time.Now())
+	require.NoError(t, err)
+	_, err = totp.Confirm(ctx, "u1", code, "", "")
+	require.NoError(t, err)
+
+	// A made-up challenge token (not issued by Login) must not complete MFA.
+	code, err = crypto.GenerateCodeAt(secret, time.Now())
+	require.NoError(t, err)
+	_, _, err = pw.VerifyMfa(ctx, "totally-made-up-token", code, "", "")
 	require.ErrorIs(t, err, &common.MfaInvalidError{})
 }
 

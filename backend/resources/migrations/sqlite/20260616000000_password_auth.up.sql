@@ -7,6 +7,7 @@ ALTER TABLE users ADD COLUMN failed_login_count INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE users ADD COLUMN locked_until DATETIME;
 ALTER TABLE users ADD COLUMN totp_secret TEXT;
 ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN totp_last_used_step INTEGER NOT NULL DEFAULT 0;
 
 CREATE TABLE password_reset_tokens
 (
@@ -26,6 +27,7 @@ CREATE TABLE mfa_challenges
 (
     id            TEXT     PRIMARY KEY,
     created_at    DATETIME NOT NULL,
+    token_hash    TEXT     NOT NULL UNIQUE,
     expires_at    DATETIME NOT NULL,
     attempt_count INTEGER  NOT NULL DEFAULT 0,
     user_id       TEXT     NOT NULL,

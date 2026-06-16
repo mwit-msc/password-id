@@ -42,10 +42,14 @@ type PasswordService struct {
 	appConfigService *AppConfigService
 	totpService      *TotpService
 	breachService    *BreachService
+
+	// dummyHash is computed once from the live Argon2 params so that DummyVerify (used to
+	// equalize timing for non-existent / passwordless users) costs the same as a real verify.
+	dummyHash string
 }
 
 func NewPasswordService(db *gorm.DB, jwtService *JwtService, auditLogService *AuditLogService, emailService *EmailService, appConfigService *AppConfigService, totpService *TotpService, breachService *BreachService) *PasswordService {
-	return &PasswordService{
+	s := &PasswordService{
 		db:               db,
 		jwtService:       jwtService,
 		auditLogService:  auditLogService,
@@ -54,6 +58,25 @@ func NewPasswordService(db *gorm.DB, jwtService *JwtService, auditLogService *Au
 		totpService:      totpService,
 		breachService:    breachService,
 	}
+
+	// Precompute a dummy hash with the configured cost for constant-time enumeration defense.
+	if random, err := utils.GenerateRandomAlphanumericString(24); err == nil {
+		if dh, err := crypto.HashPassword(random, s.argon2Params()); err == nil {
+			s.dummyHash = dh
+		}
+	}
+
+	return s
+}
+
+// dummyVerify runs an Argon2 verification against the precomputed dummy hash to keep
+// timing constant when there is no real password to check. The result is discarded.
+func (s *PasswordService) dummyVerify(password string) {
+	if s.dummyHash != "" {
+		_, _ = crypto.VerifyPassword(password, s.dummyHash)
+		return
+	}
+	crypto.DummyVerify(password)
 }
 
 func (s *PasswordService) ensureEnabled() error {
@@ -135,21 +158,23 @@ func (s *PasswordService) Login(ctx context.Context, identifier, password, ipAdd
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// Equalize timing against the user-exists path to prevent enumeration.
-			crypto.DummyVerify(password)
+			s.dummyVerify(password)
 			return LoginResult{}, &common.InvalidCredentialsError{}
 		}
 		return LoginResult{}, err
 	}
 
 	if user.PasswordHash == nil || *user.PasswordHash == "" || user.Disabled {
-		crypto.DummyVerify(password)
+		s.dummyVerify(password)
 		return LoginResult{}, &common.InvalidCredentialsError{}
 	}
 
-	// Lockout check.
+	// Lockout check. Return the generic error (and burn equivalent time) rather than a
+	// distinct status, so lockout state can't be used to enumerate valid accounts.
 	now := time.Now()
 	if user.LockedUntil != nil && user.LockedUntil.ToTime().After(now) {
-		return LoginResult{}, &common.AccountLockedError{}
+		s.dummyVerify(password)
+		return LoginResult{}, &common.InvalidCredentialsError{}
 	}
 
 	ok, err := crypto.VerifyPassword(password, *user.PasswordHash)
@@ -171,8 +196,15 @@ func (s *PasswordService) Login(ctx context.Context, identifier, password, ipAdd
 	}
 
 	if user.TotpEnabled {
+		// The challenge is identified to the client by a high-entropy random token stored
+		// only as a hash — the primary key is never exposed as a bearer credential.
+		rawToken, err := utils.GenerateRandomAlphanumericString(32)
+		if err != nil {
+			return LoginResult{}, err
+		}
 		challenge := &model.MfaChallenge{
 			UserID:    user.ID,
+			TokenHash: crypto.HashToken(rawToken),
 			ExpiresAt: datatype.DateTime(now.Add(mfaChallengeTTL)),
 		}
 		if err := tx.WithContext(ctx).Create(challenge).Error; err != nil {
@@ -181,7 +213,7 @@ func (s *PasswordService) Login(ctx context.Context, identifier, password, ipAdd
 		if err := tx.Commit().Error; err != nil {
 			return LoginResult{}, err
 		}
-		return LoginResult{User: user, MfaChallenge: challenge.ID}, nil
+		return LoginResult{User: user, MfaChallenge: rawToken}, nil
 	}
 
 	token, err := s.jwtService.GenerateAccessToken(user, AuthenticationMethodPassword)
@@ -218,8 +250,9 @@ func (s *PasswordService) registerFailedAttempt(ctx context.Context, tx *gorm.DB
 	}
 }
 
-// VerifyMfa completes a login that required a second factor.
-func (s *PasswordService) VerifyMfa(ctx context.Context, challengeID, code, ipAddress, userAgent string) (model.User, string, error) {
+// VerifyMfa completes a login that required a second factor. challengeToken is the raw
+// token issued to the client (looked up by hash); code is a TOTP or recovery code.
+func (s *PasswordService) VerifyMfa(ctx context.Context, challengeToken, code, ipAddress, userAgent string) (model.User, string, error) {
 	if err := s.ensureEnabled(); err != nil {
 		return model.User{}, "", err
 	}
@@ -229,7 +262,7 @@ func (s *PasswordService) VerifyMfa(ctx context.Context, challengeID, code, ipAd
 
 	var challenge model.MfaChallenge
 	err := tx.WithContext(ctx).
-		Where("id = ? AND expires_at > ?", challengeID, datatype.DateTime(time.Now())).
+		Where("token_hash = ? AND expires_at > ?", crypto.HashToken(challengeToken), datatype.DateTime(time.Now())).
 		Clauses(clause.Locking{Strength: "UPDATE"}).
 		First(&challenge).Error
 	if err != nil {
@@ -263,6 +296,14 @@ func (s *PasswordService) VerifyMfa(ctx context.Context, challengeID, code, ipAd
 	var user model.User
 	if err := tx.WithContext(ctx).Where("id = ?", challenge.UserID).First(&user).Error; err != nil {
 		return model.User{}, "", err
+	}
+
+	// Re-check authorization state: the account may have been disabled or locked during
+	// the MFA window. Do not issue a token for a user who can no longer log in.
+	if user.Disabled || (user.LockedUntil != nil && user.LockedUntil.ToTime().After(time.Now())) {
+		_ = tx.WithContext(ctx).Delete(&challenge).Error
+		_ = tx.Commit().Error
+		return model.User{}, "", &common.InvalidCredentialsError{}
 	}
 
 	token, err := s.jwtService.GenerateAccessToken(user, AuthenticationMethodPassword)

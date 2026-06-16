@@ -9,7 +9,9 @@ import (
 var AccessTokenCookieName = "__Host-access_token"
 var SessionIdCookieName = "__Host-session"
 var DeviceTokenCookieName = "__Secure-device_token" //nolint:gosec
-var MfaChallengeCookieName = "__Host-mfa_challenge" // pocket-id-password fork
+// pocket-id-password fork: __Secure- (not __Host-) because this cookie is path-scoped to
+// /api/password; the __Host- prefix forbids a Path attribute.
+var MfaChallengeCookieName = "__Secure-mfa_challenge"
 
 func init() {
 	if strings.HasPrefix(common.EnvConfig.AppURL, "http://") {

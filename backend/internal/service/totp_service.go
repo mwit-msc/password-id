@@ -151,7 +151,15 @@ func (s *TotpService) VerifySecondFactor(ctx context.Context, userID, code strin
 		return false, nil
 	}
 
-	if crypto.VerifyTotp(string(*user.TotpSecret), code, time.Now()) {
+	if ok, step := crypto.VerifyTotpWithStep(string(*user.TotpSecret), code, time.Now()); ok {
+		// Reject replay: the matched time-step must be strictly newer than the last used one.
+		if int64(step) <= user.TotpLastUsedStep { //nolint:gosec // step is a bounded unix time-step
+			return false, nil
+		}
+		if err := tx.WithContext(ctx).Model(&model.User{}).Where("id = ?", userID).
+			Update("totp_last_used_step", int64(step)).Error; err != nil { //nolint:gosec // bounded time-step
+			return false, err
+		}
 		return true, nil
 	}
 

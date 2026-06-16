@@ -17,7 +17,7 @@ func NewTotpController(group *gin.RouterGroup, authMiddleware *middleware.AuthMi
 	tc := &TotpController{totpService: totpService}
 
 	user := authMiddleware.WithAdminNotRequired().Add()
-	group.POST("/users/me/totp/enroll", user, tc.enrollHandler)
+	group.POST("/users/me/totp/enroll", user, rateLimitMiddleware.Add(rate.Every(10*time.Second), 5), tc.enrollHandler)
 	group.POST("/users/me/totp/confirm", user, rateLimitMiddleware.Add(rate.Every(10*time.Second), 5), tc.confirmHandler)
 	group.POST("/users/me/totp/disable", user, rateLimitMiddleware.Add(rate.Every(10*time.Second), 5), tc.disableHandler)
 }

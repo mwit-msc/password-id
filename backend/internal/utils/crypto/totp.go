@@ -84,19 +84,28 @@ func GenerateCodeAt(secret string, at time.Time) (string, error) {
 // VerifyTotp checks a user-supplied code against the secret at the given time,
 // tolerating ±totpSkewSteps of clock drift. Comparison is constant-time.
 func VerifyTotp(secret, code string, at time.Time) bool {
+	ok, _ := VerifyTotpWithStep(secret, code, at)
+	return ok
+}
+
+// VerifyTotpWithStep is like VerifyTotp but also returns the matched time-step (counter).
+// Callers enforce single-use by rejecting a code whose step is not strictly greater than
+// the last accepted step (RFC 6238 §5.2).
+func VerifyTotpWithStep(secret, code string, at time.Time) (ok bool, step uint64) {
 	code = strings.TrimSpace(code)
 	if len(code) != totpDigits {
-		return false
+		return false, 0
 	}
 	counter := uint64(at.Unix() / int64(totpPeriod.Seconds())) //nolint:gosec // unix time is positive
 	for i := -totpSkewSteps; i <= totpSkewSteps; i++ {
-		expected, err := generateCode(secret, counter+uint64(int64(i)))
+		candidate := counter + uint64(int64(i))
+		expected, err := generateCode(secret, candidate)
 		if err != nil {
-			return false
+			return false, 0
 		}
 		if subtle.ConstantTimeCompare([]byte(expected), []byte(code)) == 1 {
-			return true
+			return true, candidate
 		}
 	}
-	return false
+	return false, 0
 }

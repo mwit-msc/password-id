@@ -32,6 +32,7 @@ type User struct {
 	LockedUntil      *datatype.DateTime        `json:"-"`
 	TotpSecret       *datatype.EncryptedString `json:"-"`
 	TotpEnabled      bool                      `sortable:"true" filterable:"true"`
+	TotpLastUsedStep int64                     `json:"-"`
 
 	CustomClaims []CustomClaim
 	UserGroups   []UserGroup `gorm:"many2many:user_groups_users;"`
