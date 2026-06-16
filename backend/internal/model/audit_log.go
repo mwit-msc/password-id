@@ -36,6 +36,15 @@ const (
 	AuditLogEventNewDeviceCodeAuthorization AuditLogEvent = "NEW_DEVICE_CODE_AUTHORIZATION"
 	AuditLogEventPasskeyAdded               AuditLogEvent = "PASSKEY_ADDED"
 	AuditLogEventPasskeyRemoved             AuditLogEvent = "PASSKEY_REMOVED"
+	// pocket-id-password fork: password + TOTP auth events
+	AuditLogEventPasswordSignIn  AuditLogEvent = "PASSWORD_SIGN_IN"
+	AuditLogEventMfaSignIn       AuditLogEvent = "MFA_SIGN_IN"
+	AuditLogEventPasswordChanged AuditLogEvent = "PASSWORD_CHANGED"
+	AuditLogEventPasswordSet     AuditLogEvent = "PASSWORD_SET"
+	AuditLogEventPasswordReset   AuditLogEvent = "PASSWORD_RESET"
+	AuditLogEventAccountLocked   AuditLogEvent = "ACCOUNT_LOCKED"
+	AuditLogEventTotpEnabled     AuditLogEvent = "TOTP_ENABLED"
+	AuditLogEventTotpDisabled    AuditLogEvent = "TOTP_DISABLED"
 )
 
 // Scan and Value methods for GORM to handle the custom type

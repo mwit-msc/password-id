@@ -41,6 +41,9 @@ const (
 	// AuthenticationMethodOneTimePassword identifies one-time password/code authentication
 	AuthenticationMethodOneTimePassword = "otp"
 
+	// pocket-id-password fork: AuthenticationMethodPassword identifies username/password authentication
+	AuthenticationMethodPassword = "pwd"
+
 	// OAuthAccessTokenJWTType identifies a JWT as an OAuth access token
 	OAuthAccessTokenJWTType = "oauth-access-token" //nolint:gosec
 
