@@ -7,6 +7,14 @@ import passkeyUtil from '../utils/passkey.util';
 
 test.beforeEach(async () => await cleanupBackend());
 
+// Unauthenticated OIDC entry points (/authorize, /device) now hand off to the central
+// /login page, which supports passkey, password and social login. This signs in there
+// with a passkey so the flow returns to the OIDC page and continues.
+async function signInWithPasskey(page: Page, passkey?: keyof typeof passkeyUtil.passkeys) {
+	await (await passkeyUtil.init(page)).addPasskey(passkey);
+	await page.getByRole('button', { name: 'Authenticate' }).click();
+}
+
 test('Authorize existing client', async ({ page }) => {
 	const oidcClient = oidcClients.nextcloud;
 	const urlParams = createUrlParams(oidcClient);
@@ -22,9 +30,9 @@ test('Authorize existing client while not signed in', async ({ page }) => {
 
 	await expectCallbackRedirect(page, oidcClient.callbackUrl, async () => {
 		await page.goto(`/authorize?${urlParams.toString()}`);
-
-		await (await passkeyUtil.init(page)).addPasskey();
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		// Redirected to /login; after sign-in we return to /authorize and (for an already
+		// authorized client) the flow completes automatically.
+		await signInWithPasskey(page);
 	});
 });
 
@@ -47,8 +55,8 @@ test('Authorize new client while not signed in', async ({ page }) => {
 	await page.context().clearCookies();
 	await page.goto(`/authorize?${urlParams.toString()}`);
 
-	await (await passkeyUtil.init(page)).addPasskey();
-	await page.getByRole('button', { name: 'Sign in' }).click();
+	// Redirected to /login; sign in, then return to /authorize to grant consent.
+	await signInWithPasskey(page);
 
 	await expect(page.getByTestId('scopes').getByRole('heading', { name: 'Email' })).toBeVisible();
 	await expect(page.getByTestId('scopes').getByRole('heading', { name: 'Profile' })).toBeVisible();
@@ -64,8 +72,8 @@ test('Authorize new client fails with user group not allowed', async ({ page }) 
 	await page.context().clearCookies();
 	await page.goto(`/authorize?${urlParams.toString()}`);
 
-	await (await passkeyUtil.init(page)).addPasskey('craig');
-	await page.getByRole('button', { name: 'Sign in' }).click();
+	// Craig can sign in, but isn't in a group allowed to access this client.
+	await signInWithPasskey(page, 'craig');
 
 	await expect(page.getByTestId('scopes').getByRole('heading', { name: 'Email' })).toBeVisible();
 	await expect(page.getByTestId('scopes').getByRole('heading', { name: 'Profile' })).toBeVisible();
@@ -470,8 +478,9 @@ test('Authorize new client with device authorization flow while not signed in', 
 
 	await page.goto(`/device?code=${userCode}`);
 
-	await (await passkeyUtil.init(page)).addPasskey();
+	// Not signed in: clicking Authorize hands off to /login, preserving the user code.
 	await page.getByRole('button', { name: 'Authorize' }).click();
+	await signInWithPasskey(page);
 
 	await expect(page.getByTestId('scopes').getByRole('heading', { name: 'Email' })).toBeVisible();
 	await expect(page.getByTestId('scopes').getByRole('heading', { name: 'Profile' })).toBeVisible();
@@ -503,8 +512,10 @@ test('Authorize existing client with device authorization flow while not signed 
 
 	await page.goto(`/device?code=${userCode}`);
 
-	await (await passkeyUtil.init(page)).addPasskey();
+	// Not signed in: clicking Authorize hands off to /login, preserving the user code. The
+	// already authorized client completes automatically on return.
 	await page.getByRole('button', { name: 'Authorize' }).click();
+	await signInWithPasskey(page);
 
 	await expect(
 		page.getByRole('paragraph').filter({ hasText: 'The device has been authorized.' })
@@ -528,8 +539,9 @@ test('Authorize new client with device authorization with user group not allowed
 
 	await page.goto(`/device?code=${userCode}`);
 
-	await (await passkeyUtil.init(page)).addPasskey('craig');
+	// Craig can sign in, but isn't allowed to access this client.
 	await page.getByRole('button', { name: 'Authorize' }).click();
+	await signInWithPasskey(page, 'craig');
 
 	await expect(page.getByTestId('scopes').getByRole('heading', { name: 'Email' })).toBeVisible();
 	await expect(page.getByTestId('scopes').getByRole('heading', { name: 'Profile' })).toBeVisible();
@@ -607,8 +619,8 @@ test('Authorize existing client while not signed in with response_mode=form_post
 	const formPostRequestPromise = waitForFormPostRequest(page, oidcClient.callbackUrl);
 	await page.goto(`/authorize?${urlParams.toString()}`);
 
-	await (await passkeyUtil.init(page)).addPasskey();
-	await page.getByRole('button', { name: 'Sign in' }).click();
+	// Redirected to /login; after sign-in the already authorized client completes via form_post.
+	await signInWithPasskey(page);
 
 	await expectFormPostRequest(formPostRequestPromise);
 });
@@ -821,9 +833,10 @@ test.describe('OIDC prompt parameter', () => {
 		await page.getByRole('button', { name: 'Use a different account' }).click();
 		await expect(page.getByText('Do you want to sign in to Nextcloud')).toBeVisible();
 
-		(await passkeyUtil.init(page)).addPasskey('craig');
-
+		// Signed out: the sign-in button hands off to /login. Sign in there as a different
+		// user, then return to /authorize to confirm the account and complete the flow.
 		await page.getByRole('button', { name: 'Sign In' }).click();
+		await signInWithPasskey(page, 'craig');
 
 		await expectCallbackRedirect(page, oidcClient.callbackUrl, () =>
 			page.getByRole('button', { name: 'Sign In' }).click()

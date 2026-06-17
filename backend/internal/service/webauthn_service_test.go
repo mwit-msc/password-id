@@ -42,6 +42,28 @@ func TestCreateReauthenticationTokenWithAccessToken(t *testing.T) {
 		assert.NotEmpty(t, reauthenticationToken)
 	})
 
+	t.Run("accepts a fresh access token from password login", func(t *testing.T) {
+		service, user := setupService(t)
+		accessToken, err := service.jwtService.GenerateAccessToken(user, AuthenticationMethodPassword)
+		require.NoError(t, err)
+
+		reauthenticationToken, err := service.CreateReauthenticationTokenWithAccessToken(t.Context(), accessToken)
+
+		require.NoError(t, err)
+		assert.NotEmpty(t, reauthenticationToken)
+	})
+
+	t.Run("accepts a fresh access token from external login", func(t *testing.T) {
+		service, user := setupService(t)
+		accessToken, err := service.jwtService.GenerateAccessToken(user, AuthenticationMethodExternal)
+		require.NoError(t, err)
+
+		reauthenticationToken, err := service.CreateReauthenticationTokenWithAccessToken(t.Context(), accessToken)
+
+		require.NoError(t, err)
+		assert.NotEmpty(t, reauthenticationToken)
+	})
+
 	t.Run("rejects a fresh access token from one-time access login", func(t *testing.T) {
 		service, user := setupService(t)
 		accessToken, err := service.jwtService.GenerateAccessToken(user, AuthenticationMethodOneTimePassword)

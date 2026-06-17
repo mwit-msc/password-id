@@ -393,7 +393,16 @@ func (s *WebAuthnService) CreateReauthenticationTokenWithAccessToken(ctx context
 	if err != nil {
 		return "", err
 	}
-	if authenticationMethod != AuthenticationMethodPhishingResistant {
+	// pocket-id-password fork: a recent access token from a full interactive login
+	// (passkey, password, or external OIDC) can mint a reauthentication token. The
+	// <1-minute freshness check below guarantees the login was recent. One-time email
+	// codes (otp) are deliberately excluded as a lower-assurance recovery method.
+	switch authenticationMethod {
+	case AuthenticationMethodPhishingResistant,
+		AuthenticationMethodPassword,
+		AuthenticationMethodExternal:
+		// allowed
+	default:
 		return "", &common.ReauthenticationRequiredError{}
 	}
 

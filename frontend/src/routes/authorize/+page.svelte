@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
 	import FormattedMessage from '$lib/components/formatted-message.svelte';
 	import SignInWrapper from '$lib/components/login-wrapper.svelte';
 	import ScopeList from '$lib/components/scope-list.svelte';
@@ -13,7 +14,7 @@
 	import userStore from '$lib/stores/user-store';
 	import { cachedProfilePicture } from '$lib/utils/cached-image-util';
 	import { getAxiosErrorMessage, getWebauthnErrorMessage } from '$lib/utils/error-util';
-	import { startAuthentication, type AuthenticationResponseJSON } from '@simplewebauthn/browser';
+	import { startAuthentication } from '@simplewebauthn/browser';
 	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import type { PageProps } from './$types';
@@ -41,7 +42,6 @@
 	let authorizationRequired = $state(false);
 	let authorizationConfirmed = $state(false);
 	let accountSelectionRequired = $state(false);
-	let userSignedInAt: Date | undefined;
 
 	const fullName = $derived.by(() => {
 		if (!$userStore) {
@@ -90,7 +90,34 @@
 
 		if ($userStore) {
 			await authorize();
+		} else {
+			// Not signed in: hand off to the full /login flow so the user can pick any
+			// enabled method (password, passkey, social). After login they return here
+			// signed in and authorization proceeds. Inline passkey-only is gone.
+			await redirectToLogin();
 		}
+	}
+
+	async function redirectToLogin() {
+		isLoading = true;
+		const target = page.url.pathname + page.url.search;
+		await goto(`/login?redirect=${encodeURIComponent(target)}`);
+	}
+
+	// Clear the current session so the login page re-prompts for credentials, then return
+	// here. Used when the client demands reauthentication (max_age / prompt=login).
+	async function forceReauthLogin() {
+		try {
+			await webauthnService.logout();
+		} catch {
+			// ignore: redirecting to login regardless
+		}
+		isLoading = true;
+		// Mark the return URL so a second reauth failure shows an error instead of looping.
+		const url = new URL(page.url);
+		url.searchParams.set('_reauth', '1');
+		const target = url.pathname + url.search;
+		await goto(`/login?redirect=${encodeURIComponent(target)}`);
 	}
 
 	async function useDifferentAccount() {
@@ -104,15 +131,11 @@
 	async function authorize() {
 		isLoading = true;
 
-		let authResponse: AuthenticationResponseJSON | undefined;
-
 		try {
 			if (!$userStore?.id) {
-				const loginOptions = await webauthnService.getLoginOptions();
-				authResponse = await startAuthentication({ optionsJSON: loginOptions });
-				const user = await webauthnService.finishLogin(authResponse);
-				userStore.setUser(user);
-				userSignedInAt = new Date();
+				// No session: send to the full login flow (password / passkey / social).
+				await redirectToLogin();
+				return;
 			}
 
 			if (!authorizationConfirmed) {
@@ -147,14 +170,31 @@
 
 			let reauthToken: string | undefined;
 			if (client?.requiresReauthentication || hasPromptLogin) {
-				let authResponse;
-				const signedInRecently =
-					userSignedInAt && userSignedInAt.getTime() > Date.now() - 60 * 1000;
-				if (!signedInRecently) {
-					const loginOptions = await webauthnService.getLoginOptions();
-					authResponse = await startAuthentication({ optionsJSON: loginOptions });
+				const returnedFromForcedLogin = page.url.searchParams.get('_reauth') === '1';
+				try {
+					if (returnedFromForcedLogin) {
+						// We just forced a fresh login (password / social user, no passkey):
+						// mint the reauth token from the recent session.
+						reauthToken = await webauthnService.reauthenticate();
+					} else {
+						// Passkey users reauthenticate inline (phishing-resistant, no page nav).
+						const loginOptions = await webauthnService.getLoginOptions();
+						const authResponse = await startAuthentication({ optionsJSON: loginOptions });
+						reauthToken = await webauthnService.reauthenticate(authResponse);
+					}
+				} catch (e) {
+					if (returnedFromForcedLogin) {
+						// Fresh session still can't reauth (e.g. only one-time email-code access):
+						// stop and show the error instead of looping back to login.
+						errorMessage = getAxiosErrorMessage(e);
+						isLoading = false;
+						return;
+					}
+					// No passkey available (password / social user): force a fresh login via the
+					// full /login flow, then return here and reauth from the recent session.
+					await forceReauthLogin();
+					return;
 				}
-				reauthToken = await webauthnService.reauthenticate(authResponse);
 			}
 
 			const result = await oidService.authorize(

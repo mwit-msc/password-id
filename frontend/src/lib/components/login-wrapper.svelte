@@ -52,8 +52,15 @@
 			alternativeSignInButton.label = m.sign_in_with_login_code();
 		}
 
-		if (page.url.pathname != '/login') {
-			alternativeSignInButton.href = `${alternativeSignInButton.href}?redirect=${encodeURIComponent(page.url.pathname + page.url.search)}`;
+		// Carry the post-login redirect through the alternative (email code) flow too, so an
+		// OIDC app login completed via login code returns to /authorize instead of /settings.
+		// On /login the target lives in the ?redirect= param; elsewhere it's the current URL.
+		const redirectTarget =
+			page.url.pathname == '/login'
+				? page.url.searchParams.get('redirect')
+				: page.url.pathname + page.url.search;
+		if (redirectTarget) {
+			alternativeSignInButton.href = `${alternativeSignInButton.href}?redirect=${encodeURIComponent(redirectTarget)}`;
 		}
 	});
 </script>

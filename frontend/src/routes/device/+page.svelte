@@ -7,12 +7,11 @@
 	import { Input } from '$lib/components/ui/input';
 	import { m } from '$lib/paraglide/messages';
 	import OIDCService from '$lib/services/oidc-service';
-	import WebAuthnService from '$lib/services/webauthn-service';
 	import userStore from '$lib/stores/user-store';
 	import type { OidcDeviceCodeInfo } from '$lib/types/oidc.type';
 	import { getAxiosErrorMessage } from '$lib/utils/error-util';
 	import { preventDefault } from '$lib/utils/event-util';
-	import { startAuthentication } from '@simplewebauthn/browser';
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import ClientProviderImages from '../authorize/components/client-provider-images.svelte';
@@ -21,7 +20,6 @@
 	let { data } = $props();
 
 	const oidcService = new OIDCService();
-	const webauthnService = new WebAuthnService();
 
 	let userCode = $state(data.code || '');
 	let isLoading = $state(false);
@@ -39,12 +37,12 @@
 	async function authorize() {
 		isLoading = true;
 		try {
-			// Get access token if not signed in
+			// Not signed in: hand off to the full /login flow (password / passkey / social),
+			// preserving the entered user code so we resume here after sign-in.
 			if (!$userStore) {
-				const loginOptions = await webauthnService.getLoginOptions();
-				const authResponse = await startAuthentication({ optionsJSON: loginOptions });
-				const user = await webauthnService.finishLogin(authResponse);
-				await userStore.setUser(user);
+				const target = `/device?code=${encodeURIComponent(userCode)}`;
+				await goto(`/login?redirect=${encodeURIComponent(target)}`);
+				return;
 			}
 
 			const info = await oidcService.getDeviceCodeInfo(userCode);
